@@ -1,0 +1,468 @@
+import email
+from tkinter import*
+from tkinter import messagebox
+import random
+import os
+import tempfile
+import smtplib
+#functionality part
+
+def reset_entry_to_zero(entry):
+    entry.delete(0, END)
+    entry.insert(0, '0')
+
+def clear():
+    for e in (bathsoapEntry, facecreamEntry, facewashEntry,
+              hairsprayEntry, hairgelEntry, bodylotionEntry,
+              riceEntry, oilEntry, daalEntry, wheatEntry, sugarEntry, teaEntry,
+              maazaEntry, pepsiEntry, spriteEntry, pulpyorangeEntry, cococolaEntry, frootiEntry):
+        reset_entry_to_zero(e)
+
+    cosmetictaxEntry.delete(0,END)
+    grocerytaxEntry.delete(0,END)
+    drinkstaxEntry.delete(0,END)
+
+    cosmeticpriceEntry.delete(0,END)
+    grocerypriceEntry.delete(0,END)
+    drinkspriceEntry.delete(0,END)
+
+    nameEntry.delete(0,END)
+    phoneEntry.delete(0,END)
+    billnumberEntry.delete(0,END)
+    textarea.delete('1.0', END)
+
+
+
+
+def send_email():
+    def send_gmail():
+        try:
+            ob=smtplib.SMTP('smtp.gmail.com',587)
+            ob.starttls()
+            ob.login(senderEntry.get(),passwordEntry.get())
+            message=email_textarea.get(1.0,END)
+            ob.sendmail(senderEntry.get(),recieverEntry.get(),message)
+            ob.quit()
+            messagebox.showinfo('Success', 'Bill is successfully sent',parent=root1)
+            root1.destroy()
+        except:
+            messagebox.showerror('Error', 'Something went wrong,please try again',parent=root1)
+    if textarea.get('1.0', END).strip() == '':
+         messagebox.showerror('Error', 'Bill is empty')
+         return
+
+    root1 = Toplevel()
+    root1.title("Send gmail")
+    root1.config(bg='#42A5F5')
+    root1.resizable(width=0, height=0)
+
+    senderFrame=LabelFrame(root1,text='SENDER',font=('arial',16,'bold'),bd=6,bg='#42A5F5',fg='Black')
+    senderFrame.grid(row=0,column=0,padx=40,pady=20)
+
+    senderLabel=Label(senderFrame,text="sender's Email",font=('arial',14,'bold'),bg='#42A5F5',fg='Black')
+    senderLabel.grid(row=0,column=0,padx=10,pady=8)
+
+    senderEntry=Entry(senderFrame,font=('arial',14,'bold'),bd=2,width=23,relief=RIDGE)
+    senderEntry.grid(row=0,column=1,padx=10,pady=8)
+
+    passwordLabel = Label(senderFrame, text="password", font=('arial', 14, 'bold'), bg='#42A5F5', fg='Black')
+    passwordLabel.grid(row=1, column=0, padx=10, pady=8)
+
+    passwordEntry = Entry(senderFrame, font=('arial', 14, 'bold'), bd=2, width=23, relief=RIDGE,show='*')
+    passwordEntry.grid(row=1, column=1, padx=10, pady=8)
+
+    recipientFrame=LabelFrame(root1,text='RECIPIENT',font=('arial',16,'bold'),bd=6,bg='#42A5F5',fg='Black')
+    recipientFrame.grid(row=1,column=0,padx=40,pady=20)
+
+    recieverLabel = Label(recipientFrame, text="Email Address", font=('arial', 14, 'bold'), bg='#42A5F5', fg='Black')
+    recieverLabel.grid(row=0, column=0, padx=10, pady=8)
+
+    recieverEntry= Entry(recipientFrame, font=('arial', 14, 'bold'), bd=2, width=23, relief=RIDGE)
+    recieverEntry.grid(row=0, column=1, padx=10, pady=8)
+
+
+    messageLabel = Label(recipientFrame, text="Message", font=('arial', 14, 'bold'), bg='#42A5F5', fg='Black')
+    messageLabel.grid(row=1, column=0, padx=10, pady=8)
+
+    email_textarea=Text(recipientFrame,font=('arial', 14, 'bold'),bd=2,relief=SUNKEN,
+                        width=42,height=11)
+    email_textarea.grid(row=2, column=0,columnspan=2)
+    email_textarea.delete(1.0,END)
+    email_textarea.insert(END,textarea.get(1.0,END).replace('=','').replace('-','').replace('\t\t\t','\t\t'))
+
+    sendButton=Button(root1,text='SEND',font=('arial',14,'bold'),width=15,command=send_gmail)
+    sendButton.grid(row=2,column=0,pady=20)
+
+
+    root1.mainloop()
+
+
+
+if not os.path.exists('bills'):
+    os.mkdir('bills')
+
+
+def print_bill():
+    if textarea.get('1.0', END).strip() == '':
+        messagebox.showerror('Error', 'Bill is empty')
+    else:
+        fd, file_path = tempfile.mkstemp('.txt')
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(textarea.get('1.0', END))
+        try:
+            os.startfile(os.path.abspath(file_path), 'print')
+        except Exception:
+            messagebox.showinfo('Printed', 'Bill written to temporary file for printing.')
+
+def search_bill():
+    bill_no = billnumberEntry.get().strip()
+    for filename in os.listdir('bills/'):
+        if filename.split('.')[0] == bill_no:
+            with open(f'bills/{filename}', 'r', encoding='utf-8') as f:
+                bill_data = f.read()
+            textarea.delete('1.0', END)
+            textarea.insert(END, bill_data)
+            billnumberEntry.delete(0, END)
+            billnumberEntry.insert(0, bill_no)
+            break
+    else:
+        messagebox.showinfo(title='Bills not found', message='Bills not found')
+
+def save_bill():
+    billnumber = billnumberEntry.get()
+    bill_data = textarea.get('1.0', END)
+    if not billnumber:
+        messagebox.showerror("Error", "Please enter a bill number before saving.")
+        return
+    with open(f"bills/{billnumber}.txt", "w", encoding='utf-8') as f:
+        f.write(bill_data)
+    messagebox.showinfo("Saved", f"Bill No. {billnumber} saved successfully")
+
+def total():
+    global bathsoapprice, facewashprice, facecreamprice, hairsprayprice, hairgelprice, bodylotionprice
+    global totalcosmeticprice, cosmetictax
+    global riceprice, oilprice, daalprice, wheatprice, sugarprice, teaprice, totalgroceryprice, grocerytax
+    global maazaprice, pepsiprice, spriteprice, pulpyorangeprice, cococolaprice, frootiprice, totaldrinksprice, drinkstax
+    global totalbill
+
+    def to_int(entry):
+        try:
+            return int(entry.get())
+        except Exception:
+            return 0
+
+    # Cosmetics
+    bathsoap_q = to_int(bathsoapEntry)
+    facewash_q = to_int(facewashEntry)
+    facecream_q = to_int(facecreamEntry)
+    hairspray_q = to_int(hairsprayEntry)
+    hairgel_q = to_int(hairgelEntry)
+    bodylotion_q = to_int(bodylotionEntry)
+
+    bathsoapprice = bathsoap_q * 20
+    facewashprice = facewash_q * 60
+    facecreamprice = facecream_q * 100
+    hairsprayprice = hairspray_q * 150
+    hairgelprice = hairgel_q * 80
+    bodylotionprice = bodylotion_q * 60
+
+    totalcosmeticprice = (bathsoapprice + facewashprice + facecreamprice +
+                          hairsprayprice + hairgelprice + bodylotionprice)
+    cosmetictax = round(totalcosmeticprice * 0.05, 2)
+
+    cosmeticpriceEntry.delete(0, END)
+    cosmeticpriceEntry.insert(0, str(totalcosmeticprice) + ' Rs')
+    cosmetictaxEntry.delete(0, END)
+    cosmetictaxEntry.insert(0, str(cosmetictax) + ' Rs')
+
+    # Grocery
+    rice_q = to_int(riceEntry)
+    oil_q = to_int(oilEntry)
+    daal_q = to_int(daalEntry)
+    wheat_q = to_int(wheatEntry)
+    sugar_q = to_int(sugarEntry)
+    tea_q = to_int(teaEntry)
+
+    riceprice = rice_q * 30
+    oilprice = oil_q * 100
+    daalprice = daal_q * 120
+    wheatprice = wheat_q * 80
+    sugarprice = sugar_q * 50
+    teaprice = tea_q * 140
+
+    totalgroceryprice = riceprice + oilprice + daalprice + wheatprice + sugarprice + teaprice
+    grocerytax = round(totalgroceryprice * 0.03, 2)
+
+    grocerypriceEntry.delete(0, END)
+    grocerypriceEntry.insert(0, str(totalgroceryprice) + ' Rs')
+    grocerytaxEntry.delete(0, END)
+    grocerytaxEntry.insert(0, str(grocerytax) + ' Rs')
+
+    # Drinks
+    maaza_q = to_int(maazaEntry)
+    pepsi_q = to_int(pepsiEntry)
+    sprite_q = to_int(spriteEntry)
+    pulpy_q = to_int(pulpyorangeEntry)
+    cococola_q = to_int(cococolaEntry)
+    frooti_q = to_int(frootiEntry)
+
+    maazaprice = maaza_q * 50
+    pepsiprice = pepsi_q * 20
+    spriteprice = sprite_q * 30
+    pulpyorangeprice = pulpy_q * 20
+    cococolaprice = cococola_q * 45
+    frootiprice = frooti_q * 30
+
+    totaldrinksprice = maazaprice + pepsiprice + spriteprice + pulpyorangeprice + cococolaprice + frootiprice
+    drinkstax = round(totaldrinksprice * 0.08, 2)
+
+    drinkspriceEntry.delete(0, END)
+    drinkspriceEntry.insert(0, str(totaldrinksprice) + ' Rs')
+    drinkstaxEntry.delete(0, END)
+    drinkstaxEntry.insert(0, str(drinkstax) + ' Rs')
+
+    # Final total
+    totalbill = round(totalcosmeticprice + totalgroceryprice + totaldrinksprice + cosmetictax + grocerytax + drinkstax, 2)
+    if billnumberEntry.get().strip() == "":
+        billnumberEntry.insert(0, str(random.randint(500, 1000)))
+
+def bill_area():
+    # Basic validations
+    if nameEntry.get().strip() == '' or phoneEntry.get().strip() == '':
+        messagebox.showerror('Error', 'Customer Details Are Required')
+        return
+
+    total()
+    try:
+        cp = float(cosmeticpriceEntry.get().split()[0])
+    except Exception:
+        cp = 0.0
+    try:
+        gp = float(grocerypriceEntry.get().split()[0])
+    except Exception:
+        gp = 0.0
+    try:
+        dp = float(drinkspriceEntry.get().split()[0])
+    except Exception:
+        dp = 0.0
+
+    if cp == 0 and gp == 0 and dp == 0:
+        messagebox.showerror('Error', 'No products are selected')
+        return
+
+    # Build the bill text
+    textarea.delete('1.0', END)
+    textarea.insert(END, '\t\t**Welcome Customer**\n')
+    textarea.insert(END, f'Bill Number: {billnumberEntry.get()}\n')
+    textarea.insert(END, f'Customer Name: {nameEntry.get()}\n')
+    textarea.insert(END, f'Customer phone number: {phoneEntry.get()}\n')
+    textarea.insert(END, '\n=======================================================')
+    textarea.insert(END, '\nproduct\t\tQuantity\t\tprice')
+    textarea.insert(END, '\n=======================================================')
+
+    def add_if(q_entry, price_value, label):
+        try:
+            q = int(q_entry.get())
+        except Exception:
+            q = 0
+        if q != 0:
+            textarea.insert(END, f'\n{label}\t\t{q}\t\t{price_value} Rs')
+
+    add_if(bathsoapEntry, bathsoapprice, 'Bath soap')
+    add_if(facewashEntry, facewashprice, 'Face wash')
+    add_if(facecreamEntry, facecreamprice, 'Face cream')
+    add_if(hairsprayEntry, hairsprayprice, 'Hair spray')
+    add_if(hairgelEntry, hairgelprice, 'Hair gel')
+    add_if(bodylotionEntry, bodylotionprice, 'Body lotion')
+
+    add_if(riceEntry, riceprice, 'Rice')
+    add_if(oilEntry, oilprice, 'Oil')
+    add_if(daalEntry, daalprice, 'Daal')
+    add_if(wheatEntry, wheatprice, 'Wheat')
+    add_if(sugarEntry, sugarprice, 'Sugar')
+    add_if(teaEntry, teaprice, 'Tea')
+
+    add_if(maazaEntry, maazaprice, 'Maaza')
+    add_if(pepsiEntry, pepsiprice, 'Pepsi')
+    add_if(spriteEntry, spriteprice, 'Sprite')
+    add_if(pulpyorangeEntry, pulpyorangeprice, 'Pulpy Orange')
+    add_if(cococolaEntry, cococolaprice, 'Coco cola')
+    add_if(frootiEntry, frootiprice, 'Frooti')
+
+    textarea.insert(END, '\n-------------------------------------------------------')
+    textarea.insert(END, f'\nCosmetic tax\t\t\t{cosmetictax} Rs')
+    textarea.insert(END, f'\nGrocery tax\t\t\t{grocerytax} Rs')
+    textarea.insert(END, f'\nDrinks tax\t\t\t{drinkstax} Rs')
+    textarea.insert(END, '\n-------------------------------------------------------')
+    textarea.insert(END, f'\nTotal Bill \t\t\t {totalbill} Rs')
+    textarea.insert(END, '\n-------------------------------------------------------')
+
+#GUI
+root = Tk()
+root.title('Retail Billing System ')
+root.geometry('1920x1080')
+root.state('zoomed')
+print(root.winfo_screenwidth(), root.winfo_screenheight())
+
+headingLabel = Label(root, text='Retail Billing System', font=('times new roman', 40, 'bold'),
+                     bg='#42A5F5', fg='gold', bd=12, relief=GROOVE)
+headingLabel.pack(fill=X, pady=10)
+
+customer_details_frame = LabelFrame(root, text='customer details', font=('times new roman', 15, 'bold'),
+                                    fg='gold', bd=8, relief=GROOVE, bg='#42A5F5')
+customer_details_frame.pack(fill=X)
+
+nameLabel = Label(customer_details_frame, text='Name', font=('times new roman', 15, 'bold'), bg='#42A5F5', fg='Black')
+nameLabel.grid(row=0, column=0, padx=20)
+
+nameEntry = Entry(customer_details_frame, font=('arial', 15), bd=7, width=18)
+nameEntry.grid(row=0, column=1, padx=8)
+
+phonenumberLabel = Label(customer_details_frame, text='Phone Number', font=('times new roman', 15, 'bold'),
+                         bg='#42A5F5', fg='Black')
+phonenumberLabel.grid(row=0, column=2, padx=20, pady=2)
+
+phoneEntry = Entry(customer_details_frame, font=('arial', 15), bd=7, width=18)
+phoneEntry.grid(row=0, column=3, padx=8)
+
+billnumberlabel = Label(customer_details_frame, text='Bill Number', font=('times new roman', 15, 'bold'),
+                        bg='#42A5F5', fg='Black')
+billnumberlabel.grid(row=0, column=4, padx=20, pady=2)
+
+billnumberEntry = Entry(customer_details_frame, font=('arial', 15), bd=7, width=18)
+billnumberEntry.grid(row=0, column=5, padx=8)
+if billnumberEntry.get().strip() == "":
+    billnumberEntry.insert(0, str(random.randint(500, 1000)))
+
+searchButton = Button(customer_details_frame, text='SEARCH', font=('arial', 12, 'bold'), bd=7, width=10, command=search_bill)
+searchButton.grid(row=0, column=6, padx=10, pady=8)
+
+productsFrame = Frame(root)
+productsFrame.pack(fill=BOTH,expand=True,pady=10)
+productsFrame.grid_columnconfigure(0, weight=1)
+productsFrame.grid_columnconfigure(1, weight=1)
+productsFrame.grid_columnconfigure(2, weight=1)
+productsFrame.grid_columnconfigure(3, weight=2)
+
+# Cosmetics frame
+cosmeticsFrame = LabelFrame(productsFrame, text='cosmetics', font=('times new roman', 33, 'bold'),
+                            fg='gold', bd=8, relief=GROOVE, bg='#42A5F5')
+cosmeticsFrame.grid(row=0, column=0)
+
+def add_item_label(parent, row, text):
+    lbl = Label(parent, text=text, font=('times new roman', 18, 'bold'), bg='#42A5F5', fg='Black')
+    lbl.grid(row=row, column=0, pady=9, padx=10, sticky='w')
+    ent = Entry(parent, font=('times new roman', 15, 'bold'), width=15, bd=5)
+    ent.grid(row=row, column=1, pady=9, padx=10)
+    ent.insert(0, 0)
+    return ent
+
+bathsoapEntry = add_item_label(cosmeticsFrame, 0, 'bath soap')
+facecreamEntry = add_item_label(cosmeticsFrame, 1, 'face cream')
+facewashEntry = add_item_label(cosmeticsFrame, 2, 'face wash')
+hairsprayEntry = add_item_label(cosmeticsFrame, 3, 'hairspray')
+hairgelEntry = add_item_label(cosmeticsFrame, 4, 'Hair Gel')
+bodylotionEntry = add_item_label(cosmeticsFrame, 5, 'Body Lotion')
+
+# Grocery frame
+groceryFrame = LabelFrame(productsFrame, text='Grocery', font=('times new roman', 33, 'bold'),
+                          fg='gold', bd=8, relief=GROOVE, bg='#42A5F5')
+groceryFrame.grid(row=0, column=1)
+
+riceEntry = add_item_label(groceryFrame, 0, 'Rice')
+oilEntry = add_item_label(groceryFrame, 1, 'OIL')
+daalEntry = add_item_label(groceryFrame, 2, 'Daal')
+wheatEntry = add_item_label(groceryFrame, 3, 'Wheat')
+sugarEntry = add_item_label(groceryFrame, 4, 'sugar')
+teaEntry = add_item_label(groceryFrame, 5, 'Tea')
+
+# Drinks frame
+drinksFrame = LabelFrame(productsFrame, text='Cool Drinks', font=('times new roman', 33, 'bold'),
+                         fg='gold', bd=8, relief=GROOVE, bg='#42A5F5')
+drinksFrame.grid(row=0, column=2)
+
+maazaEntry = add_item_label(drinksFrame, 0, 'Maaza')
+pepsiEntry = add_item_label(drinksFrame, 1, 'Pepsi')
+spriteEntry = add_item_label(drinksFrame, 2, 'Sprite')
+pulpyorangeEntry = add_item_label(drinksFrame, 3, 'Pulpy Orange')
+cococolaEntry = add_item_label(drinksFrame, 4, 'Coco Cola')
+frootiEntry = add_item_label(drinksFrame, 5, 'Frooti')
+
+# Bill area
+billframe = Frame(productsFrame)
+billframe.grid(row=0, column=3, padx=10)
+
+billareaLabel = Label(billframe, text='Bill Area', font=('times new roman', 25, 'bold'), bd=7, relief=GROOVE)
+billareaLabel.pack(fill=X)
+
+scrollbar = Scrollbar(billframe, orient=VERTICAL)
+scrollbar.pack(side=RIGHT, fill=Y)
+textarea = Text(billframe, height=20, width=55, yscrollcommand=scrollbar.set)
+textarea.pack()
+scrollbar.config(command=textarea.yview)
+
+# Bill menu
+billmenuframe = LabelFrame(root, text='Bill Menu', font=('times new roman', 15, 'bold'),
+                           fg='gold', bd=8, relief=GROOVE, bg='#42A5F5')
+billmenuframe.pack(fill=X,padx=10,pady=5)
+
+cosmeticpriceLabel = Label(billmenuframe, text='Cosmetic Price', font=('times new roman', 15, 'bold'), bg='#42A5F5', fg='Black')
+cosmeticpriceLabel.grid(row=0, column=0, pady=6, padx=10, sticky='nsew')
+cosmeticpriceEntry = Entry(billmenuframe, font=('times new roman', 13, 'bold'), width=10, bd=8)
+cosmeticpriceEntry.grid(row=0, column=1, pady=6, padx=10)
+
+grocerypriceLabel = Label(billmenuframe, text='Grocery Price', font=('times new roman', 15, 'bold'), bg='#42A5F5', fg='Black')
+grocerypriceLabel.grid(row=1, column=0, pady=6, padx=10, sticky='nsew')
+grocerypriceEntry = Entry(billmenuframe, font=('times new roman', 13, 'bold'), width=10, bd=8)
+grocerypriceEntry.grid(row=1, column=1, pady=6, padx=10)
+
+drinkspriceLabel = Label(billmenuframe, text='Cool Drinks Price', font=('times new roman', 15, 'bold'), bg='#42A5F5', fg='Black')
+drinkspriceLabel.grid(row=2, column=0, pady=6, padx=10, sticky='nsew')
+drinkspriceEntry = Entry(billmenuframe, font=('times new roman', 13, 'bold'), width=10, bd=8)
+drinkspriceEntry.grid(row=2, column=1, pady=6, padx=10)
+
+cosmetictaxLabel = Label(billmenuframe, text='Cosmetic Tax', font=('times new roman', 15, 'bold'), bg='#42A5F5', fg='Black')
+cosmetictaxLabel.grid(row=0, column=2, pady=6, padx=10, sticky='nsew')
+cosmetictaxEntry = Entry(billmenuframe, font=('times new roman', 13, 'bold'), width=10, bd=5)
+cosmetictaxEntry.grid(row=0, column=3, pady=6, padx=10)
+
+grocerytaxLabel = Label(billmenuframe, text='Grocery Tax', font=('times new roman', 15, 'bold'), bg='#42A5F5', fg='Black')
+grocerytaxLabel.grid(row=1, column=2, pady=6, padx=10, sticky='nsew')
+grocerytaxEntry = Entry(billmenuframe, font=('times new roman', 13, 'bold'), width=10, bd=5)
+grocerytaxEntry.grid(row=1, column=3, pady=6, padx=10)
+
+drinkstaxLabel = Label(billmenuframe, text='Cool Drinks Tax', font=('times new roman', 15, 'bold'), bg='#42A5F5', fg='Black')
+drinkstaxLabel.grid(row=2, column=2, pady=6, padx=10, sticky='nsew')
+drinkstaxEntry = Entry(billmenuframe, font=('times new roman', 13, 'bold'), width=10, bd=5)
+drinkstaxEntry.grid(row=2, column=3, pady=6, padx=10)
+
+buttonFrame = Frame(billmenuframe, bd=8, relief=GROOVE)
+buttonFrame.grid(row=0, column=4, rowspan=3)
+
+totalButton = Button(buttonFrame, text='Total', font=('arial', 18, 'bold'),
+                     bg='#42A5F5', fg='Black', bd=5, width=8, pady=10,
+                     command=lambda: [total()])
+totalButton.grid(row=0, column=0, pady=20, padx=5)
+
+billButton = Button(buttonFrame, text='Bill', font=('arial', 18, 'bold'), bg='#42A5F5', fg='Black',
+                    bd=5, width=8, pady=10, command=bill_area)
+billButton.grid(row=0, column=1, pady=20, padx=5)
+
+emailButton = Button(buttonFrame, text='Email', font=('arial', 18, 'bold'), bg='#42A5F5', fg='Black',
+                     bd=5, width=8, pady=10,command=send_email)
+emailButton.grid(row=0, column=2, pady=20, padx=5)
+
+printButton = Button(buttonFrame, text='Print', font=('arial', 18, 'bold'), bg='#42A5F5', fg='Black',
+                     bd=5, width=8, pady=10, command=print_bill)
+printButton.grid(row=0, column=3, pady=20, padx=5)
+
+clearButton = Button(buttonFrame, text='Clear', font=('arial', 18, 'bold'),
+                     bg='#42A5F5', fg='Black', bd=5, width=8, pady=10,
+                     command=clear)
+clearButton.grid(row=0, column=4, pady=20, padx=5)
+
+saveButton = Button(buttonFrame, text='Save', font=('arial', 18, 'bold'), bg='#42A5F5', fg='Black',
+                    bd=5, width=8, pady=10, command=save_bill)
+saveButton.grid(row=0, column=5, pady=20, padx=5)
+
+root.mainloop()
